@@ -1,9 +1,0 @@
-name: chore_nag
-version: "1.0"
-author: Jo Egner <vechema@gmail.com>
-about: Do chores for great good
-subcommands:
-    - list:
-        about: show all chores
-        version: "1.0"
-        author: Jo Egner <vechema@gmail.com>
