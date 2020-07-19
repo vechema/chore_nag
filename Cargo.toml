@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 structopt = { version = "0.3", default-features = false }
+
+diesel = { version = "1.4.5", features = ["sqlite"] }
