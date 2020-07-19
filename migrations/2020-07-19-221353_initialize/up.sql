@@ -4,3 +4,6 @@ CREATE TABLE chores (
     name VARCHAR NOT NULL,
     description VARCHAR
 );
+
+INSERT INTO chores (name, description)
+VALUES ('clean sink', 'just do it' );
