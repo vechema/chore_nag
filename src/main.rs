@@ -17,10 +17,13 @@ use schema::chores;
 enum ChoreNag {
   #[structopt(about = "Show all chores")]
   List {},
+  #[structopt(about = "Add a chore")]
   Add {
     name: String,
     description: Option<String>,
   },
+  #[structopt(about = "Delete a chore by name")]
+  Remove { name: String },
 }
 
 pub fn establish_connection() -> SqliteConnection {
@@ -31,13 +34,30 @@ pub fn establish_connection() -> SqliteConnection {
     .expect(&format!("Error connecting to {}", database_url))
 }
 
-pub fn create_chore(conn: &SqliteConnection, name: String, description: Option<String>) -> usize {
+pub fn create_chore(
+  connection: &SqliteConnection,
+  name: String,
+  description: Option<String>,
+) -> usize {
   let new_chore = NewChore { name, description };
 
   diesel::insert_into(schema::chores::table)
     .values(&new_chore)
-    .execute(conn)
+    .execute(connection)
     .expect("Error saving new chore")
+}
+
+pub fn get_chores(connection: &SqliteConnection) -> Vec<Chore> {
+  chores::table
+    .limit(5)
+    .load::<Chore>(connection)
+    .expect("Error loading chores")
+}
+
+pub fn delete_chore(connection: &SqliteConnection, name: String) -> () {
+  diesel::delete(chores::table.filter(chores::name.eq(name)))
+    .execute(connection)
+    .expect("Error deleting chore");
 }
 
 fn main() {
@@ -47,18 +67,17 @@ fn main() {
 
   match opt {
     ChoreNag::List {} => {
-      let results = chores::table
-        .limit(5)
-        .load::<Chore>(&connection)
-        .expect("Error loading chores");
-
+      let chores = get_chores(&connection);
       println!("From database: ");
-      for chore in results {
+      for chore in chores {
         println!("\t{}: {:?}", chore.name, chore.description);
       }
     }
     ChoreNag::Add { name, description } => {
       create_chore(&connection, name, description);
+    }
+    ChoreNag::Remove { name } => {
+      delete_chore(&connection, name);
     }
   }
 }
