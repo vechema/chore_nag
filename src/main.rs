@@ -1,5 +1,4 @@
 use structopt::StructOpt;
-mod other;
 
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
@@ -10,8 +9,7 @@ mod models;
 mod schema;
 #[macro_use]
 extern crate diesel;
-use diesel::prelude::*;
-use models::Chore;
+use models::{Chore, NewChore};
 use schema::chores;
 
 #[derive(StructOpt, Debug)]
@@ -19,6 +17,10 @@ use schema::chores;
 enum ChoreNag {
   #[structopt(about = "Show all chores")]
   List {},
+  Add {
+    name: String,
+    description: Option<String>,
+  },
 }
 
 pub fn establish_connection() -> SqliteConnection {
@@ -29,24 +31,34 @@ pub fn establish_connection() -> SqliteConnection {
     .expect(&format!("Error connecting to {}", database_url))
 }
 
+pub fn create_chore(conn: &SqliteConnection, name: String, description: Option<String>) -> usize {
+  let new_chore = NewChore { name, description };
+
+  diesel::insert_into(schema::chores::table)
+    .values(&new_chore)
+    .execute(conn)
+    .expect("Error saving new chore")
+}
+
 fn main() {
   let opt = ChoreNag::from_args();
 
-  let chores_list = vec!["clean sink", "clean up after dog"];
-
-  match opt {
-    ChoreNag::List {} => println!("From command line: {:?}", chores_list),
-  }
-
   let connection = establish_connection();
 
-  let results = chores::table
-    .limit(5)
-    .load::<Chore>(&connection)
-    .expect("Error loading posts");
+  match opt {
+    ChoreNag::List {} => {
+      let results = chores::table
+        .limit(5)
+        .load::<Chore>(&connection)
+        .expect("Error loading chores");
 
-  println!("From database: ");
-  for chore in results {
-    println!("\t{}: {:?}", chore.name, chore.description);
+      println!("From database: ");
+      for chore in results {
+        println!("\t{}: {:?}", chore.name, chore.description);
+      }
+    }
+    ChoreNag::Add { name, description } => {
+      create_chore(&connection, name, description);
+    }
   }
 }
