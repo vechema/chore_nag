@@ -24,6 +24,11 @@ enum ChoreNag {
   },
   #[structopt(about = "Delete a chore by name")]
   Remove { name: String },
+  #[structopt(about = "Update a chore by name")]
+  Update {
+    name: String,
+    description: Option<String>,
+  },
 }
 
 pub fn establish_connection() -> SqliteConnection {
@@ -60,6 +65,17 @@ pub fn delete_chore(connection: &SqliteConnection, name: String) -> () {
     .expect("Error deleting chore");
 }
 
+pub fn update_chore(
+  connection: &SqliteConnection,
+  name: String,
+  description: Option<String>,
+) -> () {
+  diesel::update(chores::table.filter(chores::name.eq(name)))
+    .set(chores::description.eq(description))
+    .execute(connection)
+    .expect("Errer updating chore");
+}
+
 fn main() {
   let opt = ChoreNag::from_args();
 
@@ -78,6 +94,9 @@ fn main() {
     }
     ChoreNag::Remove { name } => {
       delete_chore(&connection, name);
+    }
+    ChoreNag::Update { name, description } => {
+      update_chore(&connection, name, description);
     }
   }
 }
