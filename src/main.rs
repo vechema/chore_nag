@@ -13,12 +13,15 @@ use models::{Chore, NewChore};
 use schema::chores;
 
 #[derive(StructOpt, Debug)]
-#[structopt(about = "the stupid content tracker")]
-enum ChoreNag {
-  #[structopt(about = "Show all chores")]
-  List {},
-  #[structopt(about = "Add a chore")]
-  Add {
+#[structopt(about = "Nags you to do all your chores")]
+enum Command {
+  #[structopt(about = "Show all")]
+  List {
+    #[structopt(subcommand)]
+    noun: Noun,
+  },
+  #[structopt(about = "Create a chore")]
+  Create {
     name: String,
     description: Option<String>,
   },
@@ -29,6 +32,15 @@ enum ChoreNag {
     name: String,
     description: Option<String>,
   },
+}
+
+#[derive(StructOpt, Debug)]
+#[structopt(about = "Noun")]
+enum Noun {
+  #[structopt(about = "CHORES")]
+  Chores,
+  #[structopt(about = "Rooms")]
+  Rooms,
 }
 
 pub fn establish_connection() -> SqliteConnection {
@@ -46,7 +58,7 @@ pub fn create_chore(
 ) -> usize {
   let new_chore = NewChore { name, description };
 
-  diesel::insert_into(schema::chores::table)
+  diesel::insert_into(chores::table)
     .values(&new_chore)
     .execute(connection)
     .expect("Error saving new chore")
@@ -77,25 +89,29 @@ pub fn update_chore(
 }
 
 fn main() {
-  let opt = ChoreNag::from_args();
+  let opt = Command::from_args();
 
   let connection = establish_connection();
 
   match opt {
-    ChoreNag::List {} => {
+    Command::List { noun } => {
+      let noun_picked = match noun {
+        Noun::Chores => println!("You picked chores"),
+        Noun::Rooms => println!("You picked rooms"),
+      };
       let chores = get_chores(&connection);
       println!("From database: ");
       for chore in chores {
         println!("\t{}: {:?}", chore.name, chore.description);
       }
     }
-    ChoreNag::Add { name, description } => {
+    Command::Create { name, description } => {
       create_chore(&connection, name, description);
     }
-    ChoreNag::Remove { name } => {
+    Command::Remove { name } => {
       delete_chore(&connection, name);
     }
-    ChoreNag::Update { name, description } => {
+    Command::Update { name, description } => {
       update_chore(&connection, name, description);
     }
   }
