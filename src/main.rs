@@ -10,7 +10,7 @@ mod schema;
 #[macro_use]
 extern crate diesel;
 use models::{Chore, NewChore};
-use schema::chores;
+use schema::{chores, rooms};
 
 #[derive(StructOpt, Debug)]
 #[structopt(about = "Nags you to do all your chores")]
@@ -64,11 +64,13 @@ pub fn create_chore(
     .expect("Error saving new chore")
 }
 
-pub fn get_chores(connection: &SqliteConnection) -> Vec<Chore> {
-  chores::table
-    .limit(5)
-    .load::<Chore>(connection)
-    .expect("Error loading chores")
+macro_rules! list_noun {
+  ($noun:tt, $connection:expr) => {
+    $noun::table
+      .limit(5)
+      .load::<Chore>($connection)
+      .expect("Error loading $noun")
+  };
 }
 
 pub fn delete_chore(connection: &SqliteConnection, name: String) -> () {
@@ -95,14 +97,13 @@ fn main() {
 
   match opt {
     Command::List { noun } => {
-      let noun_picked = match noun {
-        Noun::Chores => println!("You picked chores"),
-        Noun::Rooms => println!("You picked rooms"),
+      let nouns = match noun {
+        Noun::Chores => list_noun!(chores, &connection),
+        Noun::Rooms => list_noun!(rooms, &connection),
       };
-      let chores = get_chores(&connection);
       println!("From database: ");
-      for chore in chores {
-        println!("\t{}: {:?}", chore.name, chore.description);
+      for noun in nouns {
+        println!("\t{}: {:?}", noun.name, noun.description);
       }
     }
     Command::Create { name, description } => {

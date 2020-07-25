@@ -7,3 +7,12 @@ CREATE TABLE chores (
 
 INSERT INTO chores (name, description)
 VALUES ('clean sink', 'just do it' );
+
+CREATE TABLE rooms (
+    id INTEGER PRIMARY KEY NOT NULL,
+    name VARCHAR NOT NULL,
+    description VARCHAR
+);
+
+INSERT INTO rooms (name, description)
+VALUES ('kitchen', 'baking bliss' );
