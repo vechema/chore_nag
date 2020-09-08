@@ -9,7 +9,7 @@ mod models;
 mod schema;
 #[macro_use]
 extern crate diesel;
-use models::{Chore, NewChore};
+use models::{Chore, NewChore, Room};
 use schema::{chores, rooms};
 
 #[derive(StructOpt, Debug)]
@@ -64,13 +64,18 @@ pub fn create_chore(
     .expect("Error saving new chore")
 }
 
-macro_rules! list_noun {
-  ($noun:tt, $connection:expr) => {
-    $noun::table
-      .limit(5)
-      .load::<Chore>($connection)
-      .expect("Error loading $noun")
-  };
+pub fn get_chores(connection: &SqliteConnection) -> Vec<Chore> {
+  chores::table
+    .limit(5)
+    .load::<Chore>(connection)
+    .expect("Error loading chores")
+}
+
+pub fn get_rooms(connection: &SqliteConnection) -> Vec<Room> {
+  rooms::table
+    .limit(5)
+    .load::<Room>(connection)
+    .expect("Error loading rooms")
 }
 
 pub fn delete_chore(connection: &SqliteConnection, name: String) -> () {
@@ -87,7 +92,7 @@ pub fn update_chore(
   diesel::update(chores::table.filter(chores::name.eq(name)))
     .set(chores::description.eq(description))
     .execute(connection)
-    .expect("Errer updating chore");
+    .expect("Error updating chore");
 }
 
 fn main() {
@@ -97,14 +102,19 @@ fn main() {
 
   match opt {
     Command::List { noun } => {
-      let nouns = match noun {
-        Noun::Chores => list_noun!(chores, &connection),
-        Noun::Rooms => list_noun!(rooms, &connection),
-      };
       println!("From database: ");
-      for noun in nouns {
-        println!("\t{}: {:?}", noun.name, noun.description);
-      }
+      match noun {
+        Noun::Chores => {
+          for chore in get_chores(&connection) {
+            println!("\t{}: {:?}", chore.name, chore.description);
+          }
+        }
+        Noun::Rooms => {
+          for room in get_rooms(&connection) {
+            println!("\t{}: {:?}", room.name, room.description);
+          }
+        }
+      };
     }
     Command::Create { name, description } => {
       create_chore(&connection, name, description);
