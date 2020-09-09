@@ -9,7 +9,7 @@ mod models;
 mod schema;
 #[macro_use]
 extern crate diesel;
-use models::{Chore, NewChore, Room};
+use models::{Chore, NewChore, NewRoom, Room};
 use schema::{chores, rooms};
 
 #[derive(StructOpt, Debug)]
@@ -18,12 +18,12 @@ enum Command {
   #[structopt(about = "Show all")]
   List {
     #[structopt(subcommand)]
-    noun: Noun,
+    noun: NounPlural,
   },
   #[structopt(about = "Create a chore")]
   Create {
-    name: String,
-    description: Option<String>,
+    #[structopt(subcommand)]
+    noun: NounSingular,
   },
   #[structopt(about = "Delete a chore by name")]
   Remove { name: String },
@@ -36,11 +36,32 @@ enum Command {
 
 #[derive(StructOpt, Debug)]
 #[structopt(about = "Noun")]
-enum Noun {
-  #[structopt(about = "CHORES")]
-  Chores,
+enum NounPlural {
+  #[structopt(about = "Chores")]
+  Chores {
+    name: Option<String>,
+    description: Option<String>,
+  },
   #[structopt(about = "Rooms")]
-  Rooms,
+  Rooms {
+    name: Option<String>,
+    description: Option<String>,
+  },
+}
+
+#[derive(StructOpt, Debug)]
+#[structopt(about = "Noun")]
+enum NounSingular {
+  #[structopt(about = "Chore")]
+  Chore {
+    name: String,
+    description: Option<String>,
+  },
+  #[structopt(about = "Room")]
+  Room {
+    name: String,
+    description: Option<String>,
+  },
 }
 
 pub fn establish_connection() -> SqliteConnection {
@@ -62,6 +83,19 @@ pub fn create_chore(
     .values(&new_chore)
     .execute(connection)
     .expect("Error saving new chore")
+}
+
+pub fn create_room(
+  connection: &SqliteConnection,
+  name: String,
+  description: Option<String>,
+) -> usize {
+  let new_room = NewRoom { name, description };
+
+  diesel::insert_into(rooms::table)
+    .values(&new_room)
+    .execute(connection)
+    .expect("Error saving new room")
 }
 
 pub fn get_chores(connection: &SqliteConnection) -> Vec<Chore> {
@@ -104,20 +138,27 @@ fn main() {
     Command::List { noun } => {
       println!("From database: ");
       match noun {
-        Noun::Chores => {
+        NounPlural::Chores { .. } => {
           for chore in get_chores(&connection) {
             println!("\t{}: {:?}", chore.name, chore.description);
           }
         }
-        Noun::Rooms => {
+        NounPlural::Rooms { .. } => {
           for room in get_rooms(&connection) {
             println!("\t{}: {:?}", room.name, room.description);
           }
         }
       };
     }
-    Command::Create { name, description } => {
+    Command::Create {
+      noun: NounSingular::Chore { name, description },
+    } => {
       create_chore(&connection, name, description);
+    }
+    Command::Create {
+      noun: NounSingular::Room { name, description },
+    } => {
+      create_room(&connection, name, description);
     }
     Command::Remove { name } => {
       delete_chore(&connection, name);
