@@ -30,10 +30,10 @@ enum Command {
     #[structopt(subcommand)]
     noun: NounSingular,
   },
-  #[structopt(about = "Update a chore by name")]
+  #[structopt(about = "Update by name")]
   Update {
-    name: String,
-    description: Option<String>,
+    #[structopt(subcommand)]
+    noun: NounSingular,
   },
 }
 
@@ -138,6 +138,13 @@ pub fn update_chore(
     .expect("Error updating chore");
 }
 
+pub fn update_room(connection: &SqliteConnection, name: String, description: Option<String>) -> () {
+  diesel::update(rooms::table.filter(rooms::name.eq(name)))
+    .set(rooms::description.eq(description))
+    .execute(connection)
+    .expect("Error updating room");
+}
+
 fn main() {
   let opt = Command::from_args();
 
@@ -179,8 +186,15 @@ fn main() {
     } => {
       delete_room(&connection, name);
     }
-    Command::Update { name, description } => {
+    Command::Update {
+      noun: NounSingular::Chore { name, description },
+    } => {
       update_chore(&connection, name, description);
+    }
+    Command::Update {
+      noun: NounSingular::Room { name, description },
+    } => {
+      update_room(&connection, name, description);
     }
   }
 }
