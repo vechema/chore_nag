@@ -20,13 +20,16 @@ enum Command {
     #[structopt(subcommand)]
     noun: NounPlural,
   },
-  #[structopt(about = "Create a chore")]
+  #[structopt(about = "Create")]
   Create {
     #[structopt(subcommand)]
     noun: NounSingular,
   },
-  #[structopt(about = "Delete a chore by name")]
-  Remove { name: String },
+  #[structopt(about = "Delete by name")]
+  Remove {
+    #[structopt(subcommand)]
+    noun: NounSingular,
+  },
   #[structopt(about = "Update a chore by name")]
   Update {
     name: String,
@@ -118,6 +121,12 @@ pub fn delete_chore(connection: &SqliteConnection, name: String) -> () {
     .expect("Error deleting chore");
 }
 
+pub fn delete_room(connection: &SqliteConnection, name: String) -> () {
+  diesel::delete(rooms::table.filter(rooms::name.eq(name)))
+    .execute(connection)
+    .expect("Error deleting room");
+}
+
 pub fn update_chore(
   connection: &SqliteConnection,
   name: String,
@@ -160,8 +169,15 @@ fn main() {
     } => {
       create_room(&connection, name, description);
     }
-    Command::Remove { name } => {
+    Command::Remove {
+      noun: NounSingular::Chore { name, .. },
+    } => {
       delete_chore(&connection, name);
+    }
+    Command::Remove {
+      noun: NounSingular::Room { name, .. },
+    } => {
+      delete_room(&connection, name);
     }
     Command::Update { name, description } => {
       update_chore(&connection, name, description);
