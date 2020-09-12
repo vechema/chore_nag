@@ -5,12 +5,12 @@ use diesel::sqlite::SqliteConnection;
 use dotenv::dotenv;
 use std::env;
 
-mod models;
+mod model;
+use model::chore::*;
+use model::room::*;
 mod schema;
 #[macro_use]
 extern crate diesel;
-use models::{Chore, NewChore, NewRoom, Room};
-use schema::{chores, rooms};
 
 #[derive(StructOpt, Debug)]
 #[structopt(about = "Nags you to do all your chores")]
@@ -75,96 +75,25 @@ pub fn establish_connection() -> SqliteConnection {
     .expect(&format!("Error connecting to {}", database_url))
 }
 
-pub fn create_chore(
-  connection: &SqliteConnection,
-  name: String,
-  description: Option<String>,
-) -> usize {
-  let new_chore = NewChore { name, description };
-
-  diesel::insert_into(chores::table)
-    .values(&new_chore)
-    .execute(connection)
-    .expect("Error saving new chore")
-}
-
-pub fn create_room(
-  connection: &SqliteConnection,
-  name: String,
-  description: Option<String>,
-) -> usize {
-  let new_room = NewRoom { name, description };
-
-  diesel::insert_into(rooms::table)
-    .values(&new_room)
-    .execute(connection)
-    .expect("Error saving new room")
-}
-
-pub fn get_chores(connection: &SqliteConnection) -> Vec<Chore> {
-  chores::table
-    .limit(5)
-    .load::<Chore>(connection)
-    .expect("Error loading chores")
-}
-
-pub fn get_rooms(connection: &SqliteConnection) -> Vec<Room> {
-  rooms::table
-    .limit(5)
-    .load::<Room>(connection)
-    .expect("Error loading rooms")
-}
-
-pub fn delete_chore(connection: &SqliteConnection, name: String) -> () {
-  diesel::delete(chores::table.filter(chores::name.eq(name)))
-    .execute(connection)
-    .expect("Error deleting chore");
-}
-
-pub fn delete_room(connection: &SqliteConnection, name: String) -> () {
-  diesel::delete(rooms::table.filter(rooms::name.eq(name)))
-    .execute(connection)
-    .expect("Error deleting room");
-}
-
-pub fn update_chore(
-  connection: &SqliteConnection,
-  name: String,
-  description: Option<String>,
-) -> () {
-  diesel::update(chores::table.filter(chores::name.eq(name)))
-    .set(chores::description.eq(description))
-    .execute(connection)
-    .expect("Error updating chore");
-}
-
-pub fn update_room(connection: &SqliteConnection, name: String, description: Option<String>) -> () {
-  diesel::update(rooms::table.filter(rooms::name.eq(name)))
-    .set(rooms::description.eq(description))
-    .execute(connection)
-    .expect("Error updating room");
-}
-
 fn main() {
   let opt = Command::from_args();
 
   let connection = establish_connection();
 
   match opt {
-    Command::List { noun } => {
-      println!("From database: ");
-      match noun {
-        NounPlural::Chores { .. } => {
-          for chore in get_chores(&connection) {
-            println!("\t{}: {:?}", chore.name, chore.description);
-          }
-        }
-        NounPlural::Rooms { .. } => {
-          for room in get_rooms(&connection) {
-            println!("\t{}: {:?}", room.name, room.description);
-          }
-        }
-      };
+    Command::List {
+      noun: NounPlural::Chores { .. },
+    } => {
+      for chore in get_chores(&connection) {
+        println!("{}: {:?}", chore.name, chore.description);
+      }
+    }
+    Command::List {
+      noun: NounPlural::Rooms { .. },
+    } => {
+      for room in get_rooms(&connection) {
+        println!("{}: {:?}", room.name, room.description);
+      }
     }
     Command::Create {
       noun: NounSingular::Chore { name, description },
