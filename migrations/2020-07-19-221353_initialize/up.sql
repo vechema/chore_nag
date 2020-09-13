@@ -16,3 +16,12 @@ CREATE TABLE rooms (
 
 INSERT INTO rooms (name, description)
 VALUES ('kitchen', 'baking bliss' );
+
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY NOT NULL,
+    name VARCHAR NOT NULL,
+    description VARCHAR
+);
+
+INSERT INTO users (name, description)
+VALUES ('Q', 'real human, not robot' );

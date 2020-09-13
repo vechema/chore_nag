@@ -8,6 +8,7 @@ use std::env;
 mod model;
 use model::chore::*;
 use model::room::*;
+use model::user::*;
 mod schema;
 #[macro_use]
 extern crate diesel;
@@ -50,6 +51,11 @@ enum NounPlural {
     name: Option<String>,
     description: Option<String>,
   },
+  #[structopt(about = "Users")]
+  Users {
+    name: Option<String>,
+    description: Option<String>,
+  },
 }
 
 #[derive(StructOpt, Debug)]
@@ -62,6 +68,11 @@ enum NounSingular {
   },
   #[structopt(about = "Room")]
   Room {
+    name: String,
+    description: Option<String>,
+  },
+  #[structopt(about = "User")]
+  User {
     name: String,
     description: Option<String>,
   },
@@ -95,6 +106,13 @@ fn main() {
         println!("{}: {:?}", room.name, room.description);
       }
     }
+    Command::List {
+      noun: NounPlural::Users { .. },
+    } => {
+      for user in get_users(&connection) {
+        println!("{}: {:?}", user.name, user.description);
+      }
+    }
     Command::Create {
       noun: NounSingular::Chore { name, description },
     } => {
@@ -104,6 +122,11 @@ fn main() {
       noun: NounSingular::Room { name, description },
     } => {
       create_room(&connection, name, description);
+    }
+    Command::Create {
+      noun: NounSingular::User { name, description },
+    } => {
+      create_user(&connection, name, description);
     }
     Command::Remove {
       noun: NounSingular::Chore { name, .. },
@@ -115,6 +138,11 @@ fn main() {
     } => {
       delete_room(&connection, name);
     }
+    Command::Remove {
+      noun: NounSingular::User { name, .. },
+    } => {
+      delete_user(&connection, name);
+    }
     Command::Update {
       noun: NounSingular::Chore { name, description },
     } => {
@@ -124,6 +152,11 @@ fn main() {
       noun: NounSingular::Room { name, description },
     } => {
       update_room(&connection, name, description);
+    }
+    Command::Update {
+      noun: NounSingular::User { name, description },
+    } => {
+      update_user(&connection, name, description);
     }
   }
 }
