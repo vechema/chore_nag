@@ -3,7 +3,7 @@ use crate::schema::chores;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-#[derive(Queryable)]
+#[derive(Queryable, Identifiable)]
 pub struct Chore {
   pub id: i32,
   pub name: String,

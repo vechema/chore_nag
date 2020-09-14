@@ -3,7 +3,7 @@ use crate::schema::rooms;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-#[derive(Queryable)]
+#[derive(Queryable, Identifiable)]
 pub struct Room {
   pub id: i32,
   pub name: String,

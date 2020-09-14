@@ -6,6 +6,7 @@ use dotenv::dotenv;
 use std::env;
 
 mod model;
+use model::assignment::*;
 use model::chore::*;
 use model::room::*;
 use model::user::*;
@@ -55,6 +56,12 @@ enum NounPlural {
   Users {
     name: Option<String>,
     description: Option<String>,
+  },
+  #[structopt(about = "Assignments")]
+  Assignments {
+    chore_name: Option<String>,
+    room_name: Option<String>,
+    user_name: Option<String>,
   },
 }
 
@@ -111,6 +118,16 @@ fn main() {
     } => {
       for user in get_users(&connection) {
         println!("{}: {:?}", user.name, user.description);
+      }
+    }
+    Command::List {
+      noun: NounPlural::Assignments { .. },
+    } => {
+      for assignment in get_assignments(&connection) {
+        println!(
+          "{}, {}, {:?}",
+          assignment.chore_id, assignment.room_id, assignment.user_id
+        );
       }
     }
     Command::Create {
